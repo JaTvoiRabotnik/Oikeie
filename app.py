@@ -47,13 +47,14 @@ def submit():
         # Step 1: Invite user to Slack workspace
         invite_response = slack_client.admin_users_invite(
             email=email,
+            team_id='T07RAUVR1ST',
             channel_ids=[],  # We'll add the user to a new channel later
             custom_message=f"Welcome {name}! You've been invited to join our Slack workspace.",
             real_name=name
         )
         
         if not invite_response["ok"]:
-            raise SlackApiError(message=f"Failed to invite user: {invite_response.get('error', 'Unknown error')}")
+            raise SlackApiError(response=invite_response, message=f"Failed to invite user: {invite_response.get('error', 'Unknown error')}")
 
         # Step 2: Create a new channel with a random name
         channel_name = generate_channel_name()
@@ -63,7 +64,7 @@ def submit():
         )
         
         if not create_channel_response["ok"]:
-            raise SlackApiError(message=f"Failed to create channel: {create_channel_response.get('error', 'Unknown error')}")
+            raise SlackApiError(response=create_channel_response, message=f"Failed to create channel: {create_channel_response.get('error', 'Unknown error')}")
 
         new_channel_id = create_channel_response["channel"]["id"]
 
@@ -74,7 +75,7 @@ def submit():
         )
         
         if not invite_to_channel_response["ok"]:
-            raise SlackApiError(message=f"Failed to add user to channel: {invite_to_channel_response.get('error', 'Unknown error')}")
+            raise SlackApiError(response=invite_to_channel_response, message=f"Failed to add user to channel: {invite_to_channel_response.get('error', 'Unknown error')}")
 
         # Send a welcome message to the new channel
         slack_client.chat_postMessage(
