@@ -36,7 +36,11 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('message').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-                        window.location.href = data.redirect;
+                        if (data.redirect) {
+                            setTimeout(() => {
+                                window.location.href = data.redirect;
+                            }, 3000);
+                        }
                     } else {
                         document.getElementById('message').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
                     }

@@ -43,8 +43,12 @@ def login():
             'token': token,
             'token_expiry': datetime.utcnow() + timedelta(hours=24)
         }
-        send_verification_email(email, token)
-        return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
+        try:
+            send_verification_email(email, token)
+            return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
+        except Exception as e:
+            print(f"Error sending verification email: {str(e)}")
+            return jsonify({'success': False, 'message': 'An error occurred while sending the verification email. Please try again later.'})
     
     if not users[email]['verified']:
         return jsonify({'success': False, 'message': 'Please verify your email before logging in.'})
@@ -82,7 +86,7 @@ def on_join(data):
         join_room(room)
         emit('status', {'msg': f'{email} has entered the room.'}, to=room)
     else:
-        emit('status', {'msg': 'You are not verified. Please verify your email to join the chat.'}, room=request.sid)
+        emit('status', {'msg': 'You are not verified. Please verify your email to join the chat.'})
 
 @socketio.on('leave')
 def on_leave(data):
@@ -97,7 +101,7 @@ def handle_message(data):
     if email in users and users[email]['verified']:
         emit('message', {'email': email, 'message': data['message']}, to=data['room'])
     else:
-        emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'}, room=request.sid)
+        emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
