@@ -1,7 +1,5 @@
 import os
 import logging
-import random
-import string
 from flask import Flask, render_template, request, jsonify
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
@@ -26,9 +24,6 @@ slack_client = WebClient(token=slack_token)
 def index():
     return render_template('index.html')
 
-def generate_channel_name():
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-
 @app.route('/submit', methods=['POST'])
 def submit():
     name = request.form.get('name')
@@ -42,39 +37,39 @@ def submit():
         return jsonify({"success": False, "message": "Slack configuration is incomplete. Please contact the administrator."}), 500
 
     try:
-        logger.info(f"Attempting to create a channel for user: {email}")
+        logger.info(f"Attempting to invite user: {email}")
 
-        # Create a new channel with a random name
-        channel_name = generate_channel_name()
-        create_channel_response = slack_client.conversations_create(
-            name=channel_name,
-            is_private=False
-        )
-        
-        if not create_channel_response["ok"]:
-            raise SlackApiError(response=create_channel_response, message=f"Failed to create channel: {create_channel_response.get('error', 'Unknown error')}")
-
-        new_channel_id = create_channel_response["channel"]["id"]
-
-        # Send a welcome message to the new channel
-        slack_client.chat_postMessage(
-            channel=new_channel_id,
-            text=f"Welcome {name} ({email})! An administrator will add you to this channel soon."
+        # Invite user to Slack workspace
+        invite_response = slack_client.admin_users_invite(
+            email=email,
+            team_id='T07RAUVR1ST',
+            channel_ids=[],
+            custom_message=f"Welcome {name}! You've been invited to join our Slack workspace.",
+            real_name=name
         )
 
-        logger.info(f"Successfully created channel: {channel_name} for user: {email}")
+        if not invite_response["ok"]:
+            raise SlackApiError(response=invite_response, message=f"Failed to invite user: {invite_response.get('error', 'Unknown error')}")
+
+        logger.info(f"Successfully invited user: {email} to the Slack workspace")
         return jsonify({
             "success": True, 
-            "message": f"A Slack channel has been created for you. An administrator will invite you to the workspace and add you to the channel soon. Please check your email for an invitation."
+            "message": f"You have been invited to the Slack workspace. Please check your email for an invitation."
         }), 200
 
     except SlackApiError as e:
         error_message = str(e)
         logger.error(f"Slack API Error: {error_message}")
-        return jsonify({
-            "success": False, 
-            "message": "An error occurred while processing your request. An administrator has been notified and will add you to the Slack workspace manually. Please check your email for an invitation soon."
-        }), 500
+        if "already_invited" in error_message:
+            return jsonify({"success": False, "message": "You have already been invited to this Slack workspace."}), 400
+        elif "already_in_team" in error_message:
+            return jsonify({"success": False, "message": "You are already a member of this Slack workspace."}), 400
+        elif "invalid_auth" in error_message:
+            return jsonify({"success": False, "message": "Authentication failed. Please contact the administrator to check the Slack Bot Token."}), 500
+        elif "missing_scope" in error_message:
+            return jsonify({"success": False, "message": "The bot doesn't have the necessary permissions. Please contact the administrator to check the bot's scope."}), 500
+        else:
+            return jsonify({"success": False, "message": "An error occurred while processing your request. Please try again later or contact the administrator."}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
