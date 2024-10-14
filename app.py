@@ -38,6 +38,10 @@ def submit():
     if not name or not email:
         return jsonify({"success": False, "message": "Name and email are required"}), 400
 
+    if not slack_token or not slack_channel_id:
+        logger.error("Slack configuration is incomplete. Please check SLACK_BOT_TOKEN and SLACK_CHANNEL_ID.")
+        return jsonify({"success": False, "message": "Slack configuration is incomplete. Please contact the administrator."}), 500
+
     try:
         logger.info(f"Attempting to invite user: {email}")
         
@@ -61,13 +65,13 @@ def submit():
         if "already_in_channel" in error_message:
             return jsonify({"success": False, "message": "You are already a member of this Slack channel."}), 400
         elif "not_in_channel" in error_message:
-            return jsonify({"success": False, "message": "The bot is not in the specified channel. Please add the bot to the channel and try again."}), 500
+            return jsonify({"success": False, "message": "The bot is not in the specified channel. Please contact the administrator."}), 500
         elif "invalid_auth" in error_message:
-            return jsonify({"success": False, "message": "Authentication failed. Please check the Slack Bot Token."}), 500
+            return jsonify({"success": False, "message": "Authentication failed. Please contact the administrator to check the Slack Bot Token."}), 500
         elif "missing_scope" in error_message:
-            return jsonify({"success": False, "message": "The bot doesn't have the necessary permissions. Please check the bot's scope and try again."}), 500
+            return jsonify({"success": False, "message": "The bot doesn't have the necessary permissions. Please contact the administrator to check the bot's scope."}), 500
         else:
-            return jsonify({"success": False, "message": f"An error occurred: {error_message}"}), 500
+            return jsonify({"success": False, "message": "An error occurred while processing your request. Please try again later or contact the administrator."}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
