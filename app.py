@@ -1,3 +1,4 @@
+
 import os
 from flask import Flask, render_template, request, jsonify
 from slack_sdk import WebClient
@@ -38,8 +39,15 @@ def submit():
 
         return jsonify({"success": True, "message": "You have been added to the Slack channel successfully!"}), 200
     except SlackApiError as e:
-        # You'll want to handle different error cases here
-        return jsonify({"success": False, "message": str(e)}), 500
+        error_message = str(e)
+        if "already_in_channel" in error_message:
+            return jsonify({"success": False, "message": "You are already a member of this Slack channel."}), 400
+        elif "not_in_channel" in error_message:
+            return jsonify({"success": False, "message": "The bot is not in the specified channel. Please add the bot to the channel and try again."}), 500
+        elif "invalid_auth" in error_message:
+            return jsonify({"success": False, "message": "Authentication failed. Please check the Slack Bot Token."}), 500
+        else:
+            return jsonify({"success": False, "message": f"An error occurred: {error_message}"}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
