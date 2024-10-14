@@ -1,21 +1,14 @@
 import os
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
+from postmarker.core import PostmarkClient
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
 
 socketio = SocketIO(app)
-mail = Mail(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # In-memory storage for users (replace with a database in production)
@@ -25,10 +18,14 @@ def generate_verification_token(email):
     return serializer.dumps(email, salt='email-verify')
 
 def send_verification_email(email, token):
+    postmark = PostmarkClient(server_token=os.environ.get('POSTMARK_API_TOKEN'))
     verify_url = url_for('verify_email', token=token, _external=True)
-    msg = Message('Verify your email', recipients=[email])
-    msg.body = f'Click the following link to verify your email: {verify_url}'
-    mail.send(msg)
+    postmark.emails.send(
+        From=os.environ.get('MAIL_DEFAULT_SENDER'),
+        To=email,
+        Subject='Verify your email',
+        TextBody=f'Click the following link to verify your email: {verify_url}'
+    )
 
 @app.route('/')
 def index():
@@ -82,23 +79,23 @@ def on_join(data):
     room = data['room']
     if username in users and users[username]['verified']:
         join_room(room)
-        emit('status', {'msg': username + ' has entered the room.'}, room=room)
+        emit('status', {'msg': username + ' has entered the room.'}, to=room)
     else:
-        emit('status', {'msg': 'You are not verified. Please verify your email to join the chat.'}, room=request.sid)
+        emit('status', {'msg': 'You are not verified. Please verify your email to join the chat.'}, to=request.sid)
 
 @socketio.on('leave')
 def on_leave(data):
     username = data['username']
     room = data['room']
     leave_room(room)
-    emit('status', {'msg': username + ' has left the room.'}, room=room)
+    emit('status', {'msg': username + ' has left the room.'}, to=room)
 
 @socketio.on('message')
 def handle_message(data):
     if data['username'] in users and users[data['username']]['verified']:
-        emit('message', data, room=data['room'])
+        emit('message', data, to=data['room'])
     else:
-        emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'}, room=request.sid)
+        emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'}, to=request.sid)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
