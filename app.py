@@ -64,6 +64,9 @@ def submit():
             return jsonify({"success": False, "message": "You have already been invited to this Slack workspace."}), 400
         elif "already_in_team" in error_message:
             return jsonify({"success": False, "message": "You are already a member of this Slack workspace."}), 400
+        elif "not_allowed_token_type" in error_message:
+            logger.error("The Slack bot token does not have the necessary permissions to invite users.")
+            return jsonify({"success": False, "message": "We're unable to send invitations at the moment. Your request has been logged, and an administrator will invite you manually. Please check your email for an invitation soon."}), 500
         elif "invalid_auth" in error_message:
             return jsonify({"success": False, "message": "Authentication failed. Please contact the administrator to check the Slack Bot Token."}), 500
         elif "missing_scope" in error_message:
