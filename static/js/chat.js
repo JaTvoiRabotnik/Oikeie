@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', () => {
     const socket = io();
     const chatContainer = document.getElementById('chat-container');
@@ -41,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
         if (messageInput.value.trim()) {
-            socket.emit('message', { username, room, message: messageInput.value });
+            socket.emit('chat_message', { username, room, message: messageInput.value });
             messageInput.value = '';
         }
     });
