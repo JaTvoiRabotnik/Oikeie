@@ -12,4 +12,5 @@ dependencies = [
     "flask-socketio>=5.4.1",
     "flask-mail>=0.10.0",
     "postmarker>=1.0",
+    "itsdangerous>=2.2.0",
 ]

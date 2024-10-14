@@ -1,6 +1,5 @@
-
 import os
-from flask import Flask, render_template, request, jsonify, url_for, redirect
+from flask import Flask, render_template, request, jsonify, url_for, redirect, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
@@ -32,69 +31,71 @@ def send_verification_email(email, token):
 def index():
     return render_template('index.html')
 
-@app.route('/register', methods=['POST'])
-def register():
-    username = request.form.get('username')
+@app.route('/login', methods=['POST'])
+def login():
     email = request.form.get('email')
     
-    if username in users:
-        return jsonify({'success': False, 'message': 'Username already exists'})
+    if email not in users:
+        # New user, create an account
+        token = generate_verification_token(email)
+        users[email] = {
+            'verified': False,
+            'token': token,
+            'token_expiry': datetime.utcnow() + timedelta(hours=24)
+        }
+        send_verification_email(email, token)
+        return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
     
-    token = generate_verification_token(email)
-    users[username] = {
-        'email': email,
-        'verified': False,
-        'token': token,
-        'token_expiry': datetime.utcnow() + timedelta(hours=24)
-    }
+    if not users[email]['verified']:
+        return jsonify({'success': False, 'message': 'Please verify your email before logging in.'})
     
-    send_verification_email(email, token)
-    
-    return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
+    session['email'] = email
+    return jsonify({'success': True, 'message': 'Login successful', 'redirect': url_for('chat')})
 
 @app.route('/verify/<token>')
 def verify_email(token):
     try:
         email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
-        for username, user in users.items():
-            if user['email'] == email and user['token'] == token:
-                if datetime.utcnow() <= user['token_expiry']:
-                    user['verified'] = True
-                    return redirect(url_for('chat', username=username))
-                else:
-                    return "Verification link has expired. Please register again."
+        if email in users and users[email]['token'] == token:
+            if datetime.utcnow() <= users[email]['token_expiry']:
+                users[email]['verified'] = True
+                session['email'] = email
+                return redirect(url_for('chat'))
+            else:
+                return "Verification link has expired. Please try logging in again to receive a new verification email."
         return "Invalid verification link"
     except:
         return "Invalid verification link"
 
 @app.route('/chat')
 def chat():
-    username = request.args.get('username')
-    if username not in users or not users[username]['verified']:
+    email = session.get('email')
+    if not email or email not in users or not users[email]['verified']:
         return redirect(url_for('index'))
-    return render_template('chat.html', username=username)
+    return render_template('chat.html', email=email)
 
 @socketio.on('join')
 def on_join(data):
-    username = data['username']
+    email = session.get('email')
     room = data['room']
-    if username in users and users[username]['verified']:
+    if email in users and users[email]['verified']:
         join_room(room)
-        emit('status', {'msg': f'{username} has entered the room.'}, to=room)
+        emit('status', {'msg': f'{email} has entered the room.'}, to=room)
     else:
         emit('status', {'msg': 'You are not verified. Please verify your email to join the chat.'}, room=request.sid)
 
 @socketio.on('leave')
 def on_leave(data):
-    username = data['username']
+    email = session.get('email')
     room = data['room']
     leave_room(room)
-    emit('status', {'msg': f'{username} has left the room.'}, to=room)
+    emit('status', {'msg': f'{email} has left the room.'}, to=room)
 
 @socketio.on('chat_message')
 def handle_message(data):
-    if data['username'] in users and users[data['username']]['verified']:
-        emit('message', data, to=data['room'])
+    email = session.get('email')
+    if email in users and users[email]['verified']:
+        emit('message', {'email': email, 'message': data['message']}, to=data['room'])
     else:
         emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'}, room=request.sid)
 
