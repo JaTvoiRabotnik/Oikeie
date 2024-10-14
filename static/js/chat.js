@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
         statusElement.style.fontStyle = 'italic';
         chatContainer.appendChild(statusElement);
         chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        if (data.msg.includes('not verified')) {
+            messageForm.style.display = 'none';
+            const verifyMessage = document.createElement('div');
+            verifyMessage.textContent = 'Please check your email to verify your account before joining the chat.';
+            verifyMessage.classList.add('alert', 'alert-warning', 'mt-3');
+            document.body.appendChild(verifyMessage);
+        }
     });
 
     // Send message

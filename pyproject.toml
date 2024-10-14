@@ -10,4 +10,5 @@ dependencies = [
     "psycopg2-binary>=2.9.9",
     "slack-sdk>=3.33.1",
     "flask-socketio>=5.4.1",
+    "flask-mail>=0.10.0",
 ]

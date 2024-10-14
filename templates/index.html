@@ -9,20 +9,47 @@
 <body>
     <div class="container mt-5">
         <h1 class="mb-4">Welcome to Chat App</h1>
-        <form id="join-form" action="/chat" method="GET">
+        <form id="join-form" action="/register" method="POST">
             <div class="mb-3">
                 <label for="username" class="form-label">Username</label>
                 <input type="text" class="form-control" id="username" name="username" required>
             </div>
-            <button type="submit" class="btn btn-primary">Join Chat</button>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
         </form>
+        <div id="message" class="mt-3"></div>
     </div>
     <script>
         document.getElementById('join-form').addEventListener('submit', function(e) {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
-            if (username) {
-                window.location.href = `/chat?username=${encodeURIComponent(username)}`;
+            const email = document.getElementById('email').value.trim();
+            if (username && email) {
+                fetch('/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'username': username,
+                        'email': email
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('message').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                    } else {
+                        document.getElementById('message').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('message').innerHTML = '<div class="alert alert-danger">An error occurred. Please try again later.</div>';
+                });
             }
         });
     </script>
