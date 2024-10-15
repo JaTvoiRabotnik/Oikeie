@@ -4,15 +4,29 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
 from postmarker.core import PostmarkClient
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat_app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+db = SQLAlchemy(app)
 socketio = SocketIO(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-# In-memory storage for users (replace with a database in production)
-users = {}
+class Member(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    verified = db.Column(db.Boolean, default=False)
+    token = db.Column(db.String(255))
+    token_expiry = db.Column(db.DateTime)
+
+    def __repr__(self):
+        return f'<Member {self.email}>'
+
+with app.app_context():
+    db.create_all()
 
 def generate_verification_token(email):
     return serializer.dumps(email, salt='email-verify')
@@ -35,14 +49,13 @@ def index():
 def login():
     email = request.form.get('email')
     
-    if email not in users:
+    member = Member.query.filter_by(email=email).first()
+    if not member:
         # New user, create an account
         token = generate_verification_token(email)
-        users[email] = {
-            'verified': False,
-            'token': token,
-            'token_expiry': datetime.utcnow() + timedelta(hours=24)
-        }
+        new_member = Member(email=email, token=token, token_expiry=datetime.utcnow() + timedelta(hours=24))
+        db.session.add(new_member)
+        db.session.commit()
         try:
             send_verification_email(email, token)
             return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
@@ -50,7 +63,7 @@ def login():
             print(f"Error sending verification email: {str(e)}")
             return jsonify({'success': False, 'message': 'An error occurred while sending the verification email. Please try again later.'})
     
-    if not users[email]['verified']:
+    if not member.verified:
         return jsonify({'success': False, 'message': 'Please verify your email before logging in.'})
     
     session['email'] = email
@@ -60,9 +73,11 @@ def login():
 def verify_email(token):
     try:
         email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
-        if email in users and users[email]['token'] == token:
-            if datetime.utcnow() <= users[email]['token_expiry']:
-                users[email]['verified'] = True
+        member = Member.query.filter_by(email=email).first()
+        if member and member.token == token:
+            if datetime.utcnow() <= member.token_expiry:
+                member.verified = True
+                db.session.commit()
                 session['email'] = email
                 return redirect(url_for('chat'))
             else:
@@ -74,7 +89,8 @@ def verify_email(token):
 @app.route('/chat')
 def chat():
     email = session.get('email')
-    if not email or email not in users or not users[email]['verified']:
+    member = Member.query.filter_by(email=email).first()
+    if not member or not member.verified:
         return redirect(url_for('index'))
     return render_template('chat.html', email=email)
 
@@ -82,7 +98,8 @@ def chat():
 def on_join(data):
     email = session.get('email')
     room = data['room']
-    if email in users and users[email]['verified']:
+    member = Member.query.filter_by(email=email).first()
+    if member and member.verified:
         join_room(room)
         emit('status', {'msg': f'{email} has entered the room.'}, to=room)
     else:
@@ -98,7 +115,8 @@ def on_leave(data):
 @socketio.on('chat_message')
 def handle_message(data):
     email = session.get('email')
-    if email in users and users[email]['verified']:
+    member = Member.query.filter_by(email=email).first()
+    if member and member.verified:
         emit('message', {'email': email, 'message': data['message']}, to=data['room'])
     else:
         emit('status', {'msg': 'You are not verified. Please verify your email to send messages.'})
