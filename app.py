@@ -137,31 +137,24 @@ def logout():
 
 @socketio.on('join')
 def on_join(data):
-    email = session.get('email')
+    handle = data['handle']
     room = data['room']
-    member = Member.query.filter_by(email=email).first()
-    if member and member.verified and member.handle:
-        join_room(room)
-        emit('status', {'msg': f'{member.handle} has entered the room.'}, to=room)
-    else:
-        emit('status', {'msg': 'You are not verified or haven\'t set a handle. Please verify your email and set a handle to join the chat.'})
+    join_room(room)
+    emit('status', {'msg': f'{handle} has entered the room.'}, to=room)
 
 @socketio.on('leave')
 def on_leave(data):
-    email = session.get('email')
+    handle = data['handle']
     room = data['room']
-    member = Member.query.filter_by(email=email).first()
     leave_room(room)
-    emit('status', {'msg': f'{member.handle} has left the room.'}, to=room)
+    emit('status', {'msg': f'{handle} has left the room.'}, to=room)
 
 @socketio.on('chat_message')
 def handle_message(data):
-    email = session.get('email')
-    member = Member.query.filter_by(email=email).first()
-    if member and member.verified and member.handle:
-        emit('message', {'handle': member.handle, 'message': data['message']}, to=data['room'])
-    else:
-        emit('status', {'msg': 'You are not verified or haven\'t set a handle. Please verify your email and set a handle to send messages.'})
+    handle = data['handle']
+    room = data['room']
+    message = data['message']
+    emit('message', {'handle': handle, 'message': message}, to=room)
 
 @app.route('/check_db_structure')
 def check_db_structure():
