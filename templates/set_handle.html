@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Set Your Handle</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Set Your Handle</h1>
+        <form method="POST">
+            <div class="mb-3">
+                <label for="handle" class="form-label">Choose a handle</label>
+                <input type="text" class="form-control" id="handle" name="handle" required>
+            </div>
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">Set Handle</button>
+        </form>
+    </div>
+</body>
+</html>
