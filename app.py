@@ -48,6 +48,10 @@ def send_verification_email(email, token):
 
 @app.route('/')
 def index():
+    if 'email' in session:
+        member = Member.query.filter_by(email=session['email']).first()
+        if member and member.verified:
+            return redirect(url_for('chat'))
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
@@ -93,7 +97,10 @@ def verify_email(token):
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
-    email = session.get('email')
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
     member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
         return redirect(url_for('index'))
@@ -112,13 +119,21 @@ def set_handle():
 
 @app.route('/chat')
 def chat():
-    email = session.get('email')
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
     member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
         return redirect(url_for('index'))
     if not member.handle:
         return redirect(url_for('set_handle'))
     return render_template('chat.html', email=email, handle=member.handle)
+
+@app.route('/logout')
+def logout():
+    session.pop('email', None)
+    return redirect(url_for('index'))
 
 @socketio.on('join')
 def on_join(data):
