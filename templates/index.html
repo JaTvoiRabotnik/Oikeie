@@ -28,7 +28,7 @@
                 <label for="email" class="form-label">Email</label>
                 <input type="email" class="form-control" id="email" name="email" required>
             </div>
-            <button type="submit" class="btn btn-primary">Login</button>
+            <button type="submit" class="btn btn-primary">Login / Register</button>
         </form>
         {% else %}
         <p>You are logged in as {{ session.get('email') }}. <a href="{{ url_for('chat') }}">Go to Chat</a></p>
@@ -53,11 +53,7 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('message').innerHTML = `<div class="alert alert-success">${data.message}</div>`;
-                        if (data.redirect) {
-                            setTimeout(() => {
-                                window.location.href = data.redirect;
-                            }, 3000);
-                        }
+                        document.getElementById('login-form').style.display = 'none';
                     } else {
                         document.getElementById('message').innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
                     }

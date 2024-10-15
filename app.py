@@ -33,25 +33,21 @@ class Member(db.Model):
     def __repr__(self):
         return f'<Member {self.email}>'
 
-def generate_verification_token(email):
+def generate_magic_link_token(email):
     return serializer.dumps(email, salt='email-verify')
 
-def send_verification_email(email, token):
+def send_magic_link_email(email, token):
     postmark = PostmarkClient(server_token=os.environ.get('POSTMARK_API_TOKEN'))
-    verify_url = url_for('verify_email', token=token, _external=True)
+    verify_url = url_for('verify_magic_link', token=token, _external=True)
     postmark.emails.send(
         From=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@yourdomain.com'),
         To=email,
-        Subject='Verify your email',
-        TextBody=f'Click the following link to verify your email: {verify_url}'
+        Subject='Your Magic Link',
+        TextBody=f'Click the following link to log in: {verify_url}'
     )
 
 @app.route('/')
 def index():
-    if 'email' in session:
-        member = Member.query.filter_by(email=session['email']).first()
-        if member and member.verified:
-            return redirect(url_for('chat'))
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
@@ -61,25 +57,24 @@ def login():
     member = Member.query.filter_by(email=email).first()
     if not member:
         # New user, create an account
-        token = generate_verification_token(email)
-        new_member = Member(email=email, token=token, token_expiry=datetime.utcnow() + timedelta(hours=24))
-        db.session.add(new_member)
-        db.session.commit()
-        try:
-            send_verification_email(email, token)
-            return jsonify({'success': True, 'message': 'Registration successful. Please check your email to verify your account.'})
-        except Exception as e:
-            print(f"Error sending verification email: {str(e)}")
-            return jsonify({'success': False, 'message': 'An error occurred while sending the verification email. Please try again later.'})
+        member = Member(email=email)
+        db.session.add(member)
     
-    if not member.verified:
-        return jsonify({'success': False, 'message': 'Please verify your email before logging in.'})
+    # Generate new magic link token for both new and existing users
+    token = generate_magic_link_token(email)
+    member.token = token
+    member.token_expiry = datetime.utcnow() + timedelta(hours=24)
+    db.session.commit()
     
-    session['email'] = email
-    return jsonify({'success': True, 'message': 'Login successful', 'redirect': url_for('chat')})
+    try:
+        send_magic_link_email(email, token)
+        return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
+    except Exception as e:
+        print(f"Error sending magic link email: {str(e)}")
+        return jsonify({'success': False, 'message': 'An error occurred while sending the magic link email. Please try again later.'})
 
-@app.route('/verify/<token>')
-def verify_email(token):
+@app.route('/verify_magic_link/<token>')
+def verify_magic_link(token):
     try:
         email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
         member = Member.query.filter_by(email=email).first()
@@ -88,12 +83,15 @@ def verify_email(token):
                 member.verified = True
                 db.session.commit()
                 session['email'] = email
-                return redirect(url_for('set_handle'))
+                if member.handle:
+                    return redirect(url_for('chat'))
+                else:
+                    return redirect(url_for('set_handle'))
             else:
-                return "Verification link has expired. Please try logging in again to receive a new verification email."
-        return "Invalid verification link"
+                return "Magic link has expired. Please try logging in again to receive a new magic link."
+        return "Invalid magic link"
     except:
-        return "Invalid verification link"
+        return "Invalid magic link"
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
