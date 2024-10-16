@@ -15,9 +15,11 @@ app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 file_handler = logging.FileHandler('app.log')
-file_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
 db = SQLAlchemy(app)
@@ -74,16 +76,20 @@ def login():
     email = request.form.get('email')
     
     try:
+        app.logger.debug(f"Attempting to log in user with email: {email}")
         member = Member.query.filter_by(email=email).first()
         if not member:
+            app.logger.info(f"Creating new member for email: {email}")
             member = Member(email=email)
             db.session.add(member)
         
         token = generate_magic_link_token(email)
         member.token = token
         member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=24)
+        app.logger.debug(f"Committing changes to database for email: {email}")
         db.session.commit()
         
+        app.logger.debug(f"Sending magic link email to: {email}")
         send_magic_link_email(email, token)
         return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
     except SQLAlchemyError as e:
@@ -208,7 +214,7 @@ def internal_server_error(e):
 def check_db_connection():
     try:
         db.session.execute(db.select(db.text('1')))
-        app.logger.info("Database connection successful")
+        app.logger.debug("Database connection successful")
     except SQLAlchemyError as e:
         app.logger.error(f"Database connection failed: {str(e)}")
 

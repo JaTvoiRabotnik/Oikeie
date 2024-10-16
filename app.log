@@ -10,3 +10,13 @@ WHERE member.email = %(email_1)s
 (Background on this error at: https://sqlalche.me/e/20/f405)
 Database connection successful
 Database connection successful
+Database connection successful
+Database connection successful
+Database connection failed: (psycopg2.OperationalError) FATAL:  terminating connection due to administrator command
+SSL connection has been closed unexpectedly
+
+[SQL: SELECT 1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Database error in login process: Can't reconnect until invalid transaction is rolled back.  Please rollback() fully before proceeding (Background on this error at: https://sqlalche.me/e/20/8s2b)
+2024-10-16 12:08:38,471 - app - DEBUG - Database connection successful
+2024-10-16 12:08:58,699 - app - DEBUG - Database connection successful
