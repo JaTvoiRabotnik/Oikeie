@@ -20,3 +20,31 @@ SSL connection has been closed unexpectedly
 Database error in login process: Can't reconnect until invalid transaction is rolled back.  Please rollback() fully before proceeding (Background on this error at: https://sqlalche.me/e/20/8s2b)
 2024-10-16 12:08:38,471 - app - DEBUG - Database connection successful
 2024-10-16 12:08:58,699 - app - DEBUG - Database connection successful
+2024-10-16 14:59:46,454 - app - DEBUG - Database connection successful
+2024-10-16 15:00:03,875 - app - DEBUG - Database connection successful
+2024-10-16 15:00:03,883 - app - DEBUG - Attempting to log in user with email: t1oikeio@oikeio.com
+2024-10-16 15:00:03,961 - app - INFO - Creating new member for email: t1oikeio@oikeio.com
+2024-10-16 15:00:03,961 - app - DEBUG - Committing changes to database for email: t1oikeio@oikeio.com
+2024-10-16 15:00:04,097 - app - DEBUG - Sending magic link email to: t1oikeio@oikeio.com
+2024-10-16 15:00:04,395 - app - INFO - Magic link email sent to t1oikeio@oikeio.com
+2024-10-16 15:00:31,511 - app - DEBUG - Database connection successful
+2024-10-16 15:00:31,578 - app - ERROR - Error in verify_magic_link: can't compare offset-naive and offset-aware datetimes
+2024-10-16 15:02:45,958 - app - DEBUG - Database connection successful
+2024-10-16 15:02:46,159 - app - DEBUG - Database connection successful
+2024-10-16 15:02:46,828 - app - DEBUG - Database connection successful
+2024-10-16 15:02:47,247 - app - DEBUG - Database connection successful
+2024-10-16 15:02:48,586 - app - DEBUG - Database connection successful
+2024-10-16 15:02:48,786 - app - DEBUG - Database connection successful
+2024-10-16 15:02:48,981 - app - DEBUG - Database connection successful
+2024-10-16 15:02:50,404 - app - DEBUG - Database connection successful
+2024-10-16 15:02:54,383 - app - DEBUG - Database connection successful
+2024-10-16 15:03:22,524 - app - DEBUG - Database connection successful
+2024-10-16 15:03:53,654 - app - DEBUG - Database connection successful
+2024-10-16 15:05:33,532 - app - DEBUG - Database connection successful
+2024-10-16 15:05:39,101 - app - DEBUG - Database connection successful
+2024-10-16 15:06:11,289 - app - DEBUG - Database connection successful
+2024-10-16 15:06:43,413 - app - DEBUG - Database connection successful
+2024-10-16 15:12:19,879 - app - DEBUG - Database connection successful
+2024-10-16 15:13:01,706 - app - DEBUG - Database connection successful
+2024-10-16 15:14:25,275 - app - DEBUG - Database connection successful
+2024-10-16 15:14:33,572 - app - DEBUG - Database connection successful

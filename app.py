@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, url_for, redirect, session
@@ -9,9 +12,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.exceptions import NotFound, InternalServerError, Unauthorized
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+app.config['SECRET_KEY'] = os.urandom(24)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -27,27 +31,28 @@ migrate = Migrate(app, db)
 socketio = SocketIO(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-class Member(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    verified = db.Column(db.Boolean, default=False)
-    token = db.Column(db.String(255))
-    token_expiry = db.Column(db.DateTime)
-    handle = db.Column(db.String(50), unique=True)
+with app.app_context():
+    class Member(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        email = db.Column(db.String(120), unique=True, nullable=False)
+        verified = db.Column(db.Boolean, default=False)
+        token = db.Column(db.String(255))
+        token_expiry = db.Column(db.DateTime(timezone=True))
+        handle = db.Column(db.String(50), unique=True)
 
-    __table_args__ = (
-        db.UniqueConstraint('handle', name='uq_member_handle'),
-    )
+        __table_args__ = (
+            db.UniqueConstraint('handle', name='uq_member_handle'),
+        )
 
-    def __init__(self, email, verified=False, token=None, token_expiry=None, handle=None):
-        self.email = email
-        self.verified = verified
-        self.token = token
-        self.token_expiry = token_expiry
-        self.handle = handle
+        def __init__(self, email, verified=False, token=None, token_expiry=None, handle=None):
+            self.email = email
+            self.verified = verified
+            self.token = token
+            self.token_expiry = token_expiry
+            self.handle = handle
 
-    def __repr__(self):
-        return f'<Member {self.email}>'
+        def __repr__(self):
+            return f'<Member {self.email}>'
 
 def generate_magic_link_token(email):
     return serializer.dumps(email, salt='email-verify')
@@ -107,7 +112,8 @@ def verify_magic_link(token):
         email = serializer.loads(token, salt='email-verify', max_age=86400)
         member = Member.query.filter_by(email=email).first()
         if member and member.token == token:
-            if datetime.now(timezone.utc) <= member.token_expiry:
+            current_time = datetime.now(timezone.utc)
+            if member.token_expiry and current_time <= member.token_expiry:
                 member.verified = True
                 db.session.commit()
                 session['email'] = email
@@ -219,4 +225,5 @@ def check_db_connection():
         app.logger.error(f"Database connection failed: {str(e)}")
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True, log_output=True)
+    with app.app_context():
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True, log_output=True)
