@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Room</title>
+    <title>Oikeio</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/">Chat App</a>
+            <a class="navbar-brand" href="/">Oikeio</a>
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
@@ -20,7 +20,7 @@
     </nav>
 
     <div class="container mt-4">
-        <h1 class="mb-4">Chat Room</h1>
+        <h1 class="mb-4">Oikeio</h1>
         <div id="chat-container" class="border p-3 mb-3" style="height: 400px; overflow-y: auto;" data-handle="{{ handle }}"></div>
         <form id="message-form">
             <div class="input-group mb-3">

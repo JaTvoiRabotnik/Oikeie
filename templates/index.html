@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to Chat App</title>
+    <title>Welcome to Oikeio</title>
     <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="/">Chat App</a>
+            <a class="navbar-brand" href="/">Oikeio</a>
             {% if session.get('email') %}
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
@@ -21,7 +21,7 @@
     </nav>
 
     <div class="container mt-5">
-        <h1 class="mb-4">Welcome to Chat App</h1>
+        <h1 class="mb-4">Welcome to Oikeio</h1>
         {% if not session.get('email') %}
         <form id="login-form">
             <div class="mb-3">
