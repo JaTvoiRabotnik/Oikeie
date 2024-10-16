@@ -1,4 +1,9 @@
 from app import app, socketio
 
+# This file serves as the entry point for Gunicorn
+# Gunicorn will import the 'app' object from here
+
 if __name__ == "__main__":
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True, log_output=True)
+    # This block will only be executed when running the file directly
+    # It won't be used by Gunicorn, but can be helpful for local development
+    socketio.run(app, debug=True)
