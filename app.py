@@ -8,6 +8,7 @@ from postmarker.core import PostmarkClient
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from werkzeug.exceptions import NotFound, InternalServerError, Unauthorized
+from sqlalchemy.exc import SQLAlchemyError
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
@@ -85,6 +86,10 @@ def login():
         
         send_magic_link_email(email, token)
         return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
+    except SQLAlchemyError as e:
+        app.logger.error(f"Database error in login process: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'A database error occurred. Please try again later.'})
     except Exception as e:
         app.logger.error(f"Error in login process: {str(e)}")
         db.session.rollback()
@@ -198,6 +203,14 @@ def page_not_found(e):
 def internal_server_error(e):
     app.logger.error(f"500 error: {str(e)}")
     return render_template('error.html', message="Internal server error"), 500
+
+@app.before_request
+def check_db_connection():
+    try:
+        db.session.execute(db.select(db.text('1')))
+        app.logger.info("Database connection successful")
+    except SQLAlchemyError as e:
+        app.logger.error(f"Database connection failed: {str(e)}")
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True, log_output=True)

@@ -1,0 +1,12 @@
+Error in login process: (psycopg2.errors.UndefinedTable) relation "member" does not exist
+LINE 2: FROM member 
+             ^
+
+[SQL: SELECT member.id AS member_id, member.email AS member_email, member.verified AS member_verified, member.token AS member_token, member.token_expiry AS member_token_expiry, member.handle AS member_handle 
+FROM member 
+WHERE member.email = %(email_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'email_1': 't1oikeio@oikeio.com', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+Database connection successful
+Database connection successful
