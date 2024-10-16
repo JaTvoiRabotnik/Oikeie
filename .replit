@@ -23,6 +23,14 @@ args = "Run Flask SocketIO App"
 task = "workflow.run"
 args = "Run Gunicorn Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Apply Migrations"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Run DB Migration"
+
 [[workflows.workflow]]
 name = "Run Flask App"
 author = "agent"
@@ -58,6 +66,28 @@ agentRequireRestartOnSave = false
 task = "shell.exec"
 args = "gunicorn --worker-class eventlet -w 1 main:app -b 0.0.0.0:5000"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Apply Migrations"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flask db upgrade"
+
+[[workflows.workflow]]
+name = "Run DB Migration"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python migrate_db.py"
 
 [deployment]
 run = ["sh", "-c", "python main.py"]

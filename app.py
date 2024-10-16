@@ -11,10 +11,9 @@ from werkzeug.exceptions import NotFound, InternalServerError, Unauthorized
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat_app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 file_handler = logging.FileHandler('app.log')
 file_handler.setLevel(logging.INFO)
@@ -94,7 +93,7 @@ def login():
 @app.route('/verify_magic_link/<token>')
 def verify_magic_link(token):
     try:
-        email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
+        email = serializer.loads(token, salt='email-verify', max_age=86400)
         member = Member.query.filter_by(email=email).first()
         if member and member.token == token:
             if datetime.now(timezone.utc) <= member.token_expiry:
