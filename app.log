@@ -265,3 +265,5 @@ Traceback (most recent call last):
     super().__init__(**kwargs)
 TypeError: AbstractConnection.__init__() got an unexpected keyword argument 'client'
 2024-10-17 15:11:14,195 - app - ERROR - 500 error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+2024-10-17 16:06:12,826 - app - DEBUG - Entering index route
+2024-10-17 16:06:12,826 - app - DEBUG - Rendering index template

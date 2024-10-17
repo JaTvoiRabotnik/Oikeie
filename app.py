@@ -76,17 +76,25 @@ class Member(db.Model):
 
 @app.route('/')
 def index():
+    app.logger.debug("Entering index route")
     if 'email' in session:
+        app.logger.debug(f"Session email: {session['email']}")
         member = Member.query.filter_by(email=session['email']).first()
         if member and member.verified:
+            app.logger.debug(f"Member verified: {member.verified}")
             if not member.handle:
+                app.logger.debug("Redirecting to set_handle")
                 return redirect(url_for('set_handle'))
+            app.logger.debug("Redirecting to chat")
             return redirect(url_for('chat'))
+    app.logger.debug("Rendering index template")
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
 def login():
+    app.logger.debug("Entering login route")
     if is_rate_limited(request.remote_addr, 5, 60):
+        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
         return jsonify({'success': False, 'message': 'Rate limit exceeded. Please try again later.'}), 429
     
     email = request.form.get('email')
@@ -113,7 +121,9 @@ def login():
 
 @app.route('/verify_magic_link')
 def verify_magic_link():
+    app.logger.debug("Entering verify_magic_link route")
     if is_rate_limited(request.remote_addr, 3, 60):
+        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
     try:
@@ -129,11 +139,15 @@ def verify_magic_link():
             session['email'] = email
             
             if not member.handle:
+                app.logger.debug("Redirecting to set_handle")
                 return redirect(url_for('set_handle'))
+            app.logger.debug("Redirecting to chat")
             return redirect(url_for('chat'))
         else:
+            app.logger.warning("Invalid or expired magic link")
             return render_template('error.html', message="Invalid or expired magic link")
     except (SignatureExpired, BadSignature):
+        app.logger.warning("Invalid or expired magic link")
         return render_template('error.html', message="Invalid or expired magic link")
     except Exception as e:
         app.logger.error(f"Error in verify_magic_link: {str(e)}")
@@ -141,15 +155,19 @@ def verify_magic_link():
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
+    app.logger.debug("Entering set_handle route")
     if is_rate_limited(request.remote_addr, 5, 60):
+        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
     if 'email' not in session:
+        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
     
     member = Member.query.filter_by(email=session['email']).first()
     
     if not member or not member.verified:
+        app.logger.debug("Member not found or not verified, redirecting to index")
         return redirect(url_for('index'))
     
     if request.method == 'POST':
@@ -158,9 +176,11 @@ def set_handle():
             try:
                 existing_member = Member.query.filter_by(handle=handle).first()
                 if existing_member:
+                    app.logger.debug(f"Handle {handle} already taken")
                     return render_template('set_handle.html', error="This handle is already taken. Please choose another.")
                 member.handle = handle
                 db.session.commit()
+                app.logger.debug(f"Handle set to {handle}, redirecting to chat")
                 return redirect(url_for('chat'))
             except Exception as e:
                 app.logger.error(f"Error in set_handle: {str(e)}")
@@ -171,25 +191,32 @@ def set_handle():
 
 @app.route('/chat')
 def chat():
+    app.logger.debug("Entering chat route")
     if is_rate_limited(request.remote_addr, 30, 60):
+        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
     if 'email' not in session:
+        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
     
     member = Member.query.filter_by(email=session['email']).first()
     
     if not member or not member.verified:
+        app.logger.debug("Member not found or not verified, redirecting to index")
         return redirect(url_for('index'))
     
     if not member.handle:
+        app.logger.debug("No handle set, redirecting to set_handle")
         return redirect(url_for('set_handle'))
     
     return render_template('chat.html', email=member.email, handle=member.handle)
 
 @app.route('/logout')
 def logout():
+    app.logger.debug("Entering logout route")
     session.pop('email', None)
+    app.logger.debug("Session cleared, redirecting to index")
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
