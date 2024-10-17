@@ -64,3 +64,14 @@ Database error in login process: Can't reconnect until invalid transaction is ro
 2024-10-17 14:26:49,719 - app - ERROR - Error in verify_magic_link: can't compare offset-naive and offset-aware datetimes
 2024-10-17 14:29:49,271 - app - DEBUG - Database connection successful
 2024-10-17 14:29:49,618 - app - DEBUG - Database connection successful
+2024-10-17 14:30:05,937 - app - DEBUG - Database connection successful
+2024-10-17 14:30:54,632 - app - DEBUG - Database connection successful
+2024-10-17 14:30:54,633 - app - DEBUG - Attempting to log in user with email: t1oikeio@oikeio.com
+2024-10-17 14:30:54,696 - app - INFO - Creating new member for email: t1oikeio@oikeio.com
+2024-10-17 14:30:54,697 - app - DEBUG - Committing changes to database for email: t1oikeio@oikeio.com
+2024-10-17 14:30:54,819 - app - DEBUG - Sending magic link email to: t1oikeio@oikeio.com
+2024-10-17 14:30:55,065 - app - INFO - Magic link email sent to t1oikeio@oikeio.com
+2024-10-17 14:31:04,341 - app - DEBUG - Database connection successful
+2024-10-17 14:31:04,400 - app - ERROR - Error in verify_magic_link: can't compare offset-naive and offset-aware datetimes
+2024-10-17 14:32:20,650 - app - DEBUG - Database connection successful
+2024-10-17 14:32:21,278 - app - DEBUG - Database connection successful

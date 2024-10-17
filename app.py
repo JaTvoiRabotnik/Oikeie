@@ -113,7 +113,8 @@ def verify_magic_link(token):
         member = Member.query.filter_by(email=email).first()
         if member and member.token == token:
             current_time = datetime.now(timezone.utc)
-            if member.token_expiry and current_time <= member.token_expiry:
+            app.logger.debug(f"Current time: {current_time}, Token expiry: {member.token_expiry}")
+            if member.token_expiry and current_time <= member.token_expiry.replace(tzinfo=timezone.utc):
                 member.verified = True
                 member.token = None
                 member.token_expiry = None
