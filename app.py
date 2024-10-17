@@ -16,11 +16,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_talisman import Talisman
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_limiter.storage import RedisStorage
 from flask_wtf.csrf import CSRFProtect
 import secrets
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
@@ -28,13 +29,19 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
-# Temporarily disable Talisman
-# Talisman(app, content_security_policy={...}, force_https=False)
+Talisman(app, content_security_policy={
+    'default-src': "'self'",
+    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.replit.com https://fonts.googleapis.com",
+    'font-src': "'self' https://fonts.gstatic.com",
+    'img-src': "'self' data:",
+    'connect-src': "'self' wss:",
+}, force_https=False)
 
-# Initialize CSRF protection
 csrf = CSRFProtect(app)
 
-# Initialize rate limiter
+db = SQLAlchemy(app)
+
 limiter = Limiter(
     app=app,
     key_func=get_remote_address,
@@ -48,7 +55,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 socketio = SocketIO(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -250,7 +256,12 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
     app.logger.error(f"500 error: {str(e)}")
-    return render_template('error.html', message="Internal server error"), 500
+    return render_template('error.html', message="An internal error occurred. Please try again later."), 500
+
+@app.errorhandler(Unauthorized)
+def unauthorized_error(e):
+    app.logger.warning(f"Unauthorized access attempt: {request.url}")
+    return render_template('error.html', message="You are not authorized to access this page."), 401
 
 @app.before_request
 def check_db_connection():

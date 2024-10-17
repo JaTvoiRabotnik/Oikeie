@@ -9,4 +9,4 @@ from app import app, socketio
 if __name__ == "__main__":
     # This block will only be executed when running the file directly
     # It won't be used by Gunicorn, but can be helpful for local development
-    socketio.run(app, host='0.0.0.0', port=5000, ssl_context='adhoc')
+    socketio.run(app, host='0.0.0.0', port=5000, ssl_context='adhoc', ignore_sigwinch=True)
