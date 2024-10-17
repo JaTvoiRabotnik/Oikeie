@@ -1,0 +1,79 @@
+It appears that multiple redirects are occurring due to the redirection logic in app.py. Here are some specific areas to check and modify:
+
+Verify Magic Link:
+
+Ensure the verify_magic_link route correctly handles verification without causing a redirection loop.
+Set Handle:
+
+Ensure the set_handle route does not redirect back to index unnecessarily.
+Chat:
+
+Ensure the chat route correctly checks session and member status without causing a loop.
+Possible Fixes:
+verify_magic_link:
+@app.route('/verify_magic_link')
+def verify_magic_link():
+    try:
+        token = request.args.get('token')
+        email = serializer.loads(token, salt='email-verify', max_age=3600)
+        member = Member.query.filter_by(email=email).first()
+        if member and member.token == token:
+            current_time = datetime.now(timezone.utc)
+            if member.token_expiry and current_time <= member.token_expiry.replace(tzinfo=timezone.utc):
+                member.verified = True
+                member.token = None
+                member.token_expiry = None
+                db.session.commit()
+                session['email'] = email
+                if member.handle:
+                    return redirect(url_for('chat'))
+                else:
+                    return redirect(url_for('set_handle'))
+            else:
+                return render_template('error.html', message="Magic link has expired. Please try logging in again to receive a new magic link.")
+        return render_template('error.html', message="Invalid magic link")
+    except (SignatureExpired, BadSignature):
+        return render_template('error.html', message="Invalid or expired magic link")
+    except Exception as e:
+        return render_template('error.html', message="An error occurred while processing your request")
+set_handle:
+@app.route('/set_handle', methods=['GET', 'POST'])
+def set_handle():
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
+    if not member or not member.verified:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        handle = request.form.get('handle')
+        if handle:
+            try:
+                existing_member = Member.query.filter_by(handle=handle).first()
+                if existing_member:
+                    return render_template('set_handle.html', error="This handle is already taken. Please choose another.")
+                member.handle = handle
+                db.session.commit()
+                return redirect(url_for('chat'))
+            except Exception as e:
+                db.session.rollback()
+                return render_template('set_handle.html', error="An error occurred while setting your handle. Please try again.")
+    
+    return render_template('set_handle.html')
+chat:
+@app.route('/chat')
+def chat():
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
+    if not member or not member.verified:
+        return redirect(url_for('index'))
+    if not member.handle:
+        return redirect(url_for('set_handle'))
+    return render_template('chat.html', email=email, handle=member.handle)
+Testing:
+Test these changes locally to ensure that the redirection loop is resolved and that the application flows as expected.

@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
-
 import os
 import logging
 from flask import Flask, render_template, request, jsonify, url_for, redirect, session
@@ -37,8 +34,10 @@ Talisman(app, content_security_policy={
 }, force_https=False)
 
 csrf = CSRFProtect(app)
-
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+socketio = SocketIO(app)
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 logging.basicConfig(level=logging.DEBUG)
 file_handler = logging.FileHandler('app.log')
@@ -46,10 +45,6 @@ file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
-
-migrate = Migrate(app, db)
-socketio = SocketIO(app)
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # In-memory rate limiting
 rate_limits = defaultdict(lambda: {'count': 0, 'reset_time': datetime.now()})
@@ -61,34 +56,33 @@ def is_rate_limited(key, limit, period):
     rate_limits[key]['count'] += 1
     return rate_limits[key]['count'] > limit
 
-with app.app_context():
-    class Member(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        email = db.Column(db.String(120), unique=True, nullable=False)
-        verified = db.Column(db.Boolean, default=False)
-        token = db.Column(db.String(255))
-        token_expiry = db.Column(db.DateTime(timezone=True))
-        handle = db.Column(db.String(50), unique=True)
+class Member(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    verified = db.Column(db.Boolean, default=False)
+    token = db.Column(db.String(255))
+    token_expiry = db.Column(db.DateTime(timezone=True))
+    handle = db.Column(db.String(50), unique=True)
 
-        __table_args__ = (
-            db.UniqueConstraint('handle', name='uq_member_handle'),
-        )
+    def __init__(self, email, verified=False, token=None, token_expiry=None, handle=None):
+        self.email = email
+        self.verified = verified
+        self.token = token
+        self.token_expiry = token_expiry
+        self.handle = handle
 
-        def __init__(self, email, verified=False, token=None, token_expiry=None, handle=None):
-            self.email = email
-            self.verified = verified
-            self.token = token
-            self.token_expiry = token_expiry
-            self.handle = handle
+    def __repr__(self):
+        return f'<Member {self.email}>'
 
-        def __repr__(self):
-            return f'<Member {self.email}>'
-
-# Apply rate limiting to specific routes
 @app.route('/')
 def index():
-    if is_rate_limited(request.remote_addr, 10, 60):
-        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
+    if 'email' in session:
+        member = Member.query.filter_by(email=session['email']).first()
+        if member and member.verified:
+            if member.handle:
+                return redirect(url_for('chat'))
+            else:
+                return redirect(url_for('set_handle'))
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
@@ -110,7 +104,8 @@ def login():
         member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=24)
         db.session.commit()
         
-        # Send magic link email logic here
+        # Send magic link email logic here (implement this part)
+        
         return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
     except Exception as e:
         app.logger.error(f"Error in login process: {str(e)}")
@@ -122,31 +117,84 @@ def verify_magic_link():
     if is_rate_limited(request.remote_addr, 3, 60):
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
-    # Existing verify_magic_link logic here
-    pass
+    try:
+        token = request.args.get('token')
+        email = serializer.loads(token, salt='email-confirm', max_age=86400)  # 24 hours expiry
+        member = Member.query.filter_by(email=email).first()
+        
+        if member and member.token == token:
+            member.verified = True
+            member.token = None
+            member.token_expiry = None
+            db.session.commit()
+            session['email'] = email
+            
+            if member.handle:
+                return redirect(url_for('chat'))
+            else:
+                return redirect(url_for('set_handle'))
+        else:
+            return render_template('error.html', message="Invalid or expired magic link")
+    except (SignatureExpired, BadSignature):
+        return render_template('error.html', message="Invalid or expired magic link")
+    except Exception as e:
+        app.logger.error(f"Error in verify_magic_link: {str(e)}")
+        return render_template('error.html', message="An error occurred while processing your request")
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
     if is_rate_limited(request.remote_addr, 5, 60):
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
-    # Existing set_handle logic here
-    pass
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
+    
+    if not member or not member.verified:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        handle = request.form.get('handle')
+        if handle:
+            try:
+                existing_member = Member.query.filter_by(handle=handle).first()
+                if existing_member:
+                    return render_template('set_handle.html', error="This handle is already taken. Please choose another.")
+                member.handle = handle
+                db.session.commit()
+                return redirect(url_for('chat'))
+            except Exception as e:
+                app.logger.error(f"Error in set_handle: {str(e)}")
+                db.session.rollback()
+                return render_template('set_handle.html', error="An error occurred while setting your handle. Please try again.")
+    
+    return render_template('set_handle.html')
 
 @app.route('/chat')
 def chat():
     if is_rate_limited(request.remote_addr, 30, 60):
         return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     
-    # Existing chat logic here
-    pass
+    if 'email' not in session:
+        return redirect(url_for('index'))
+    
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
+    
+    if not member or not member.verified:
+        return redirect(url_for('index'))
+    
+    if not member.handle:
+        return redirect(url_for('set_handle'))
+    
+    return render_template('chat.html', email=email, handle=member.handle)
 
-# Error handlers
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    return render_template('error.html', message="Too many requests. Please try again later."), 429
-
-# Rest of the existing code...
+@app.route('/logout')
+def logout():
+    session.pop('email', None)
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)
