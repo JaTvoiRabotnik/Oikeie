@@ -112,97 +112,67 @@ def login():
         db.session.rollback()
         return jsonify({'success': False, 'message': 'An error occurred while processing your request. Please try again later.'})
 
-@app.route('/verify_magic_link')
-def verify_magic_link():
-    app.logger.debug("Entering verify_magic_link route")
-    if is_rate_limited(request.remote_addr, 3, 60):
-        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
-        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
-    
-    try:
-        token = request.args.get('token')
-        email = serializer.loads(token, salt='email-confirm', max_age=86400)  # 24 hours expiry
-        member = Member.query.filter_by(email=email).first()
-        
-        if member and member.token == token:
-            member.verified = True
-            member.token = None
-            member.token_expiry = None
-            db.session.commit()
-            session['email'] = email
-            
-            if not member.handle:
-                app.logger.debug("Redirecting to set_handle")
-                return redirect(url_for('set_handle'))
-            app.logger.debug("Redirecting to chat")
-            return redirect(url_for('chat'))
-        else:
-            app.logger.warning("Invalid or expired magic link")
-            return render_template('error.html', message="Invalid or expired magic link")
-    except (SignatureExpired, BadSignature):
-        app.logger.warning("Invalid or expired magic link")
-        return render_template('error.html', message="Invalid or expired magic link")
-    except Exception as e:
-        app.logger.error(f"Error in verify_magic_link: {str(e)}")
-        return render_template('error.html', message="An error occurred while processing your request")
+        @app.route('/verify_magic_link')
+        def verify_magic_link():
+            try:
+                token = request.args.get('token')
+                email = serializer.loads(token, salt='email-confirm', max_age=86400)
+                member = Member.query.filter_by(email=email).first()
+                if member and member.token == token:
+                    member.verified = True
+                    member.token = None
+                    member.token_expiry = None
+                    db.session.commit()
+                    session['email'] = email
+                    if member.handle:
+                        return redirect(url_for('chat'))
+                    else:
+                        return redirect(url_for('set_handle'))
+                else:
+                    return render_template('error.html', message="Invalid or expired magic link")
+            except (SignatureExpired, BadSignature):
+                return render_template('error.html', message="Invalid or expired magic link")
+            except Exception as e:
+                return render_template('error.html', message="An error occurred while processing your request")
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
-    app.logger.debug("Entering set_handle route")
-    if is_rate_limited(request.remote_addr, 5, 60):
-        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
-        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
-    
     if 'email' not in session:
-        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
-    
-    member = Member.query.filter_by(email=session['email']).first()
-    
+
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
-        app.logger.debug("Member not found or not verified, redirecting to index")
         return redirect(url_for('index'))
-    
+
     if request.method == 'POST':
         handle = request.form.get('handle')
         if handle:
             try:
                 existing_member = Member.query.filter_by(handle=handle).first()
                 if existing_member:
-                    app.logger.debug(f"Handle {handle} already taken")
                     return render_template('set_handle.html', error="This handle is already taken. Please choose another.")
                 member.handle = handle
                 db.session.commit()
-                app.logger.debug(f"Handle set to {handle}, redirecting to chat")
                 return redirect(url_for('chat'))
             except Exception as e:
-                app.logger.error(f"Error in set_handle: {str(e)}")
                 db.session.rollback()
                 return render_template('set_handle.html', error="An error occurred while setting your handle. Please try again.")
-    
+
     return render_template('set_handle.html')
 
 @app.route('/chat')
 def chat():
-    app.logger.debug("Entering chat route")
-    if is_rate_limited(request.remote_addr, 30, 60):
-        app.logger.warning(f"Rate limit exceeded for {request.remote_addr}")
-        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
-    
     if 'email' not in session:
-        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
-    
-    member = Member.query.filter_by(email=session['email']).first()
-    
+
+    email = session['email']
+    member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
-        app.logger.debug("Member not found or not verified, redirecting to index")
         return redirect(url_for('index'))
-    
     if not member.handle:
-        app.logger.debug("No handle set, redirecting to set_handle")
         return redirect(url_for('set_handle'))
-    
+
     return render_template('chat.html', email=member.email, handle=member.handle)
 
 @app.route('/logout')
