@@ -79,14 +79,7 @@ def index():
     app.logger.debug("Entering index route")
     if 'email' in session:
         app.logger.debug(f"Session email: {session['email']}")
-        member = Member.query.filter_by(email=session['email']).first()
-        if member and member.verified:
-            app.logger.debug(f"Member verified: {member.verified}")
-            if not member.handle:
-                app.logger.debug("Redirecting to set_handle")
-                return redirect(url_for('set_handle'))
-            app.logger.debug("Redirecting to chat")
-            return redirect(url_for('chat'))
+        return redirect(url_for('chat'))
     app.logger.debug("Rendering index template")
     return render_template('index.html')
 
