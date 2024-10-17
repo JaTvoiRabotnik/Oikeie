@@ -79,10 +79,9 @@ def index():
     if 'email' in session:
         member = Member.query.filter_by(email=session['email']).first()
         if member and member.verified:
-            if member.handle:
-                return redirect(url_for('chat'))
-            else:
+            if not member.handle:
                 return redirect(url_for('set_handle'))
+            return redirect(url_for('chat'))
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
@@ -129,10 +128,9 @@ def verify_magic_link():
             db.session.commit()
             session['email'] = email
             
-            if member.handle:
-                return redirect(url_for('chat'))
-            else:
+            if not member.handle:
                 return redirect(url_for('set_handle'))
+            return redirect(url_for('chat'))
         else:
             return render_template('error.html', message="Invalid or expired magic link")
     except (SignatureExpired, BadSignature):
@@ -149,8 +147,7 @@ def set_handle():
     if 'email' not in session:
         return redirect(url_for('index'))
     
-    email = session['email']
-    member = Member.query.filter_by(email=email).first()
+    member = Member.query.filter_by(email=session['email']).first()
     
     if not member or not member.verified:
         return redirect(url_for('index'))
@@ -180,8 +177,7 @@ def chat():
     if 'email' not in session:
         return redirect(url_for('index'))
     
-    email = session['email']
-    member = Member.query.filter_by(email=email).first()
+    member = Member.query.filter_by(email=session['email']).first()
     
     if not member or not member.verified:
         return redirect(url_for('index'))
@@ -189,7 +185,7 @@ def chat():
     if not member.handle:
         return redirect(url_for('set_handle'))
     
-    return render_template('chat.html', email=email, handle=member.handle)
+    return render_template('chat.html', email=member.email, handle=member.handle)
 
 @app.route('/logout')
 def logout():
