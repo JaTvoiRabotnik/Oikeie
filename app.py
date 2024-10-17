@@ -225,5 +225,5 @@ def check_db_connection():
         app.logger.error(f"Database connection failed: {str(e)}")
 
 if __name__ == '__main__':
-    with app.app_context():
-        socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=True, log_output=True)
+    # This block will only be executed when running the file directly
+    print("This file should be run via Gunicorn and not directly.")
