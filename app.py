@@ -13,11 +13,40 @@ from flask_migrate import Migrate
 from werkzeug.exceptions import NotFound, InternalServerError, Unauthorized
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_talisman import Talisman
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_wtf.csrf import CSRFProtect
+import secrets
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+
+# Enable HTTPS
+Talisman(app, content_security_policy={
+    'default-src': "'self'",
+    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+    'style-src': "'self' 'unsafe-inline' https://cdn.replit.com https://fonts.googleapis.com",
+    'font-src': "'self' https://fonts.gstatic.com",
+    'img-src': "'self' data:",
+    'connect-src': "'self' wss:",
+}, force_https=False)  # Set force_https to False as Replit handles HTTPS
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
+# Initialize rate limiter
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 logging.basicConfig(level=logging.DEBUG)
 file_handler = logging.FileHandler('app.log')
@@ -54,13 +83,13 @@ with app.app_context():
         def __repr__(self):
             return f'<Member {self.email}>'
 
-def generate_magic_link_token(email):
-    return serializer.dumps(email, salt='email-verify')
+def generate_magic_link_token():
+    return secrets.token_urlsafe(32)
 
 def send_magic_link_email(email, token):
     try:
         postmark = PostmarkClient(server_token=os.environ.get('POSTMARK_API_TOKEN'))
-        verify_url = url_for('verify_magic_link', token=token, _external=True)
+        verify_url = url_for('verify_magic_link', token=token, _external=True, _scheme='https')
         postmark.emails.send(
             From=os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@yourdomain.com'),
             To=email,
@@ -77,6 +106,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     email = request.form.get('email')
     
@@ -88,9 +118,9 @@ def login():
             member = Member(email=email)
             db.session.add(member)
         
-        token = generate_magic_link_token(email)
+        token = generate_magic_link_token()
         member.token = token
-        member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=24)
+        member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
         app.logger.debug(f"Committing changes to database for email: {email}")
         db.session.commit()
         
@@ -107,11 +137,11 @@ def login():
         return jsonify({'success': False, 'message': 'An error occurred while processing your request. Please try again later.'})
 
 @app.route('/verify_magic_link/<token>')
+@limiter.limit("5 per minute")
 def verify_magic_link(token):
     try:
-        email = serializer.loads(token, salt='email-verify', max_age=86400)
-        member = Member.query.filter_by(email=email).first()
-        if member and member.token == token:
+        member = Member.query.filter_by(token=token).first()
+        if member:
             current_time = datetime.now(timezone.utc)
             app.logger.debug(f"Current time: {current_time}, Token expiry: {member.token_expiry}")
             if member.token_expiry and current_time <= member.token_expiry.replace(tzinfo=timezone.utc):
@@ -119,20 +149,19 @@ def verify_magic_link(token):
                 member.token = None
                 member.token_expiry = None
                 db.session.commit()
-                session['email'] = email
-                app.logger.info(f"User {email} verified successfully")
+                session.clear()
+                session['email'] = member.email
+                session.permanent = True
+                app.logger.info(f"User {member.email} verified successfully")
                 if member.handle:
                     return redirect(url_for('chat'))
                 else:
                     return redirect(url_for('set_handle'))
             else:
-                app.logger.warning(f"Expired magic link used for {email}")
+                app.logger.warning(f"Expired magic link used for {member.email}")
                 return render_template('error.html', message="Magic link has expired. Please try logging in again to receive a new magic link.")
-        app.logger.warning(f"Invalid magic link used for {email}")
+        app.logger.warning(f"Invalid magic link used")
         return render_template('error.html', message="Invalid magic link")
-    except (SignatureExpired, BadSignature):
-        app.logger.warning("Invalid or expired token used")
-        return render_template('error.html', message="Invalid or expired magic link")
     except Exception as e:
         app.logger.error(f"Error in verify_magic_link: {str(e)}")
         return render_template('error.html', message="An error occurred while processing your request")
@@ -228,5 +257,4 @@ def check_db_connection():
         app.logger.error(f"Database connection failed: {str(e)}")
 
 if __name__ == '__main__':
-    # This block will only be executed when running the file directly
     print("This file should be run via Gunicorn and not directly.")

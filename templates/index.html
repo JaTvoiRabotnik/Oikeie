@@ -28,6 +28,7 @@
                 <label for="email" class="form-label">Email</label>
                 <input type="email" class="form-control" id="email" name="email" required>
             </div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary">Login / Register</button>
         </form>
         {% else %}
@@ -44,9 +45,11 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
                     },
                     body: new URLSearchParams({
-                        'email': email
+                        'email': email,
+                        'csrf_token': document.querySelector('input[name="csrf_token"]').value
                     })
                 })
                 .then(response => response.json())
