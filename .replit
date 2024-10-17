@@ -35,6 +35,10 @@ args = "Check DB Structure"
 task = "workflow.run"
 args = "Run Gunicorn Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Check Migration Status"
+
 [[workflows.workflow]]
 name = "Run Flask App"
 author = "agent"
@@ -103,6 +107,17 @@ agentRequireRestartOnSave = false
 task = "shell.exec"
 args = "gunicorn --worker-class eventlet -w 1 main:app -b 0.0.0.0:5000"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Check Migration Status"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "flask db current"
 
 [deployment]
 run = ["sh", "-c", "python app.py"]

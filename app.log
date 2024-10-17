@@ -141,3 +141,127 @@ Database error in login process: Can't reconnect until invalid transaction is ro
 2024-10-17 14:55:29,535 - app - DEBUG - Database connection successful
 2024-10-17 14:58:35,933 - app - DEBUG - Database connection successful
 2024-10-17 14:58:35,933 - app - DEBUG - Accessing index route. Session: <SecureCookieSession {}>
+2024-10-17 15:10:58,967 - app - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1415, in get_connection
+    connection = self._available_connections.pop()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from empty list
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 878, in full_dispatch_request
+    rv = self.preprocess_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1253, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1176, in _check_request_limit
+    raise e
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1157, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1094, in __evaluate_limits
+    if not method(lim.limit, *args, **kwargs):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/strategies.py", line 140, in hit
+    self.storage.incr(
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/storage/base.py", line 27, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/storage/redis.py", line 209, in incr
+    return int(self.lua_incr_expire([key], [expiry, amount]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5501, in __call__
+    return client.evalsha(self.sha, len(keys), *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5710, in evalsha
+    return self._evalsha("EVALSHA", sha, numkeys, *keys_and_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5694, in _evalsha
+    return self.execute_command(command, sha, numkeys, *keys_and_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/client.py", line 559, in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/client.py", line 565, in _execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1417, in get_connection
+    connection = self.make_connection()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1463, in make_connection
+    return self.connection_class(**self.connection_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 684, in __init__
+    super().__init__(**kwargs)
+TypeError: AbstractConnection.__init__() got an unexpected keyword argument 'client'
+2024-10-17 15:10:58,991 - app - ERROR - 500 error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+2024-10-17 15:11:14,193 - app - ERROR - Exception on / [GET]
+Traceback (most recent call last):
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1415, in get_connection
+    connection = self._available_connections.pop()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+IndexError: pop from empty list
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 878, in full_dispatch_request
+    rv = self.preprocess_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask/app.py", line 1253, in preprocess_request
+    rv = self.ensure_sync(before_func)()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1176, in _check_request_limit
+    raise e
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1157, in _check_request_limit
+    self.__evaluate_limits(endpoint, all_limits)
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/flask_limiter/extension.py", line 1094, in __evaluate_limits
+    if not method(lim.limit, *args, **kwargs):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/strategies.py", line 140, in hit
+    self.storage.incr(
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/storage/base.py", line 27, in inner
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/limits/storage/redis.py", line 209, in incr
+    return int(self.lua_incr_expire([key], [expiry, amount]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5501, in __call__
+    return client.evalsha(self.sha, len(keys), *args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5710, in evalsha
+    return self._evalsha("EVALSHA", sha, numkeys, *keys_and_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/commands/core.py", line 5694, in _evalsha
+    return self.execute_command(command, sha, numkeys, *keys_and_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/client.py", line 559, in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/client.py", line 565, in _execute_command
+    conn = self.connection or pool.get_connection(command_name, **options)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1417, in get_connection
+    connection = self.make_connection()
+                 ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 1463, in make_connection
+    return self.connection_class(**self.connection_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/Oikeie/.pythonlibs/lib/python3.11/site-packages/redis/connection.py", line 684, in __init__
+    super().__init__(**kwargs)
+TypeError: AbstractConnection.__init__() got an unexpected keyword argument 'client'
+2024-10-17 15:11:14,195 - app - ERROR - 500 error: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
