@@ -139,3 +139,5 @@ Database error in login process: Can't reconnect until invalid transaction is ro
 2024-10-17 14:54:55,085 - app - DEBUG - Database connection successful
 2024-10-17 14:55:08,135 - app - DEBUG - Database connection successful
 2024-10-17 14:55:29,535 - app - DEBUG - Database connection successful
+2024-10-17 14:58:35,933 - app - DEBUG - Database connection successful
+2024-10-17 14:58:35,933 - app - DEBUG - Accessing index route. Session: <SecureCookieSession {}>

@@ -28,15 +28,8 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
-# Enable HTTPS
-Talisman(app, content_security_policy={
-    'default-src': "'self'",
-    'script-src': "'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
-    'style-src': "'self' 'unsafe-inline' https://cdn.replit.com https://fonts.googleapis.com",
-    'font-src': "'self' https://fonts.gstatic.com",
-    'img-src': "'self' data:",
-    'connect-src': "'self' wss:",
-}, force_https=False)  # Set force_https to False as Replit handles HTTPS
+# Temporarily disable Talisman
+# Talisman(app, content_security_policy={...}, force_https=False)
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
@@ -103,15 +96,19 @@ def send_magic_link_email(email, token):
 
 @app.route('/')
 def index():
+    app.logger.debug(f"Accessing index route. Session: {session}")
+    if 'email' in session:
+        app.logger.debug(f"User is logged in. Redirecting to chat.")
+        return redirect(url_for('chat'))
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
     email = request.form.get('email')
+    app.logger.debug(f"Login attempt for email: {email}")
     
     try:
-        app.logger.debug(f"Attempting to log in user with email: {email}")
         member = Member.query.filter_by(email=email).first()
         if not member:
             app.logger.info(f"Creating new member for email: {email}")
@@ -121,16 +118,11 @@ def login():
         token = generate_magic_link_token()
         member.token = token
         member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=1)
-        app.logger.debug(f"Committing changes to database for email: {email}")
         db.session.commit()
         
-        app.logger.debug(f"Sending magic link email to: {email}")
         send_magic_link_email(email, token)
+        app.logger.debug(f"Magic link sent to: {email}")
         return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
-    except SQLAlchemyError as e:
-        app.logger.error(f"Database error in login process: {str(e)}")
-        db.session.rollback()
-        return jsonify({'success': False, 'message': 'A database error occurred. Please try again later.'})
     except Exception as e:
         app.logger.error(f"Error in login process: {str(e)}")
         db.session.rollback()
@@ -139,6 +131,7 @@ def login():
 @app.route('/verify_magic_link/<token>')
 @limiter.limit("5 per minute")
 def verify_magic_link(token):
+    app.logger.debug(f"Verifying magic link with token: {token}")
     try:
         member = Member.query.filter_by(token=token).first()
         if member:
@@ -154,8 +147,10 @@ def verify_magic_link(token):
                 session.permanent = True
                 app.logger.info(f"User {member.email} verified successfully")
                 if member.handle:
+                    app.logger.debug(f"Redirecting to chat for user: {member.email}")
                     return redirect(url_for('chat'))
                 else:
+                    app.logger.debug(f"Redirecting to set_handle for user: {member.email}")
                     return redirect(url_for('set_handle'))
             else:
                 app.logger.warning(f"Expired magic link used for {member.email}")
@@ -168,12 +163,15 @@ def verify_magic_link(token):
 
 @app.route('/set_handle', methods=['GET', 'POST'])
 def set_handle():
+    app.logger.debug(f"Accessing set_handle route. Session: {session}")
     if 'email' not in session:
+        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
     
     email = session['email']
     member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
+        app.logger.debug(f"Member not found or not verified: {email}")
         return redirect(url_for('index'))
     
     if request.method == 'POST':
@@ -182,6 +180,7 @@ def set_handle():
             try:
                 existing_member = Member.query.filter_by(handle=handle).first()
                 if existing_member:
+                    app.logger.debug(f"Handle already taken: {handle}")
                     return render_template('set_handle.html', error="This handle is already taken. Please choose another.")
                 member.handle = handle
                 db.session.commit()
@@ -196,14 +195,18 @@ def set_handle():
 
 @app.route('/chat')
 def chat():
+    app.logger.debug(f"Accessing chat route. Session: {session}")
     if 'email' not in session:
+        app.logger.debug("No email in session, redirecting to index")
         return redirect(url_for('index'))
     
     email = session['email']
     member = Member.query.filter_by(email=email).first()
     if not member or not member.verified:
+        app.logger.debug(f"Member not found or not verified: {email}")
         return redirect(url_for('index'))
     if not member.handle:
+        app.logger.debug(f"Handle not set for user: {email}")
         return redirect(url_for('set_handle'))
     return render_template('chat.html', email=email, handle=member.handle)
 
@@ -212,6 +215,7 @@ def logout():
     email = session.pop('email', None)
     if email:
         app.logger.info(f"User logged out: {email}")
+    app.logger.debug("Redirecting to index after logout")
     return redirect(url_for('index'))
 
 @socketio.on('join')
