@@ -75,3 +75,41 @@ Database error in login process: Can't reconnect until invalid transaction is ro
 2024-10-17 14:31:04,400 - app - ERROR - Error in verify_magic_link: can't compare offset-naive and offset-aware datetimes
 2024-10-17 14:32:20,650 - app - DEBUG - Database connection successful
 2024-10-17 14:32:21,278 - app - DEBUG - Database connection successful
+2024-10-17 14:32:39,325 - app - DEBUG - Database connection successful
+2024-10-17 14:34:08,085 - app - DEBUG - Database connection successful
+2024-10-17 14:38:13,962 - app - DEBUG - Database connection successful
+2024-10-17 14:38:13,963 - app - DEBUG - Attempting to log in user with email: t1oikeio@oikeio.com
+2024-10-17 14:38:14,025 - app - INFO - Creating new member for email: t1oikeio@oikeio.com
+2024-10-17 14:38:14,026 - app - DEBUG - Committing changes to database for email: t1oikeio@oikeio.com
+2024-10-17 14:38:14,146 - app - DEBUG - Sending magic link email to: t1oikeio@oikeio.com
+2024-10-17 14:38:14,425 - app - INFO - Magic link email sent to t1oikeio@oikeio.com
+2024-10-17 14:38:22,614 - app - DEBUG - Database connection successful
+2024-10-17 14:38:22,671 - app - DEBUG - Current time: 2024-10-17 14:38:22.671596+00:00, Token expiry: 2024-10-18 14:38:14.026240
+2024-10-17 14:38:22,786 - app - INFO - User t1oikeio@oikeio.com verified successfully
+2024-10-17 14:38:23,225 - app - DEBUG - Database connection successful
+2024-10-17 14:38:26,853 - app - DEBUG - Database connection successful
+2024-10-17 14:38:27,082 - app - INFO - Handle set for user t1oikeio@oikeio.com: Marco
+2024-10-17 14:38:27,361 - app - DEBUG - Database connection successful
+2024-10-17 14:38:27,758 - app - DEBUG - Database connection successful
+2024-10-17 14:38:28,437 - app - INFO - User Marco joined room general
+2024-10-17 14:38:32,229 - app - INFO - Chat message in room general from Marco: hi there
+2024-10-17 14:39:07,781 - app - DEBUG - Database connection successful
+2024-10-17 14:39:07,781 - app - INFO - User logged out: t1oikeio@oikeio.com
+2024-10-17 14:39:08,110 - app - DEBUG - Database connection successful
+2024-10-17 14:39:28,662 - app - DEBUG - Database connection successful
+2024-10-17 14:39:28,662 - app - DEBUG - Attempting to log in user with email: t1oikeio@oikeio.com
+2024-10-17 14:39:28,721 - app - DEBUG - Committing changes to database for email: t1oikeio@oikeio.com
+2024-10-17 14:39:28,835 - app - DEBUG - Sending magic link email to: t1oikeio@oikeio.com
+2024-10-17 14:39:29,084 - app - INFO - Magic link email sent to t1oikeio@oikeio.com
+2024-10-17 14:39:38,013 - app - DEBUG - Database connection successful
+2024-10-17 14:39:38,072 - app - DEBUG - Current time: 2024-10-17 14:39:38.072007+00:00, Token expiry: 2024-10-18 14:39:28.721379
+2024-10-17 14:39:38,185 - app - INFO - User t1oikeio@oikeio.com verified successfully
+2024-10-17 14:39:38,622 - app - DEBUG - Database connection successful
+2024-10-17 14:39:39,015 - app - DEBUG - Database connection successful
+2024-10-17 14:39:39,554 - app - INFO - User Marco joined room general
+2024-10-17 14:39:46,252 - app - INFO - Chat message in room general from Marco: hi again
+2024-10-17 14:40:25,138 - app - DEBUG - Database connection successful
+2024-10-17 14:40:25,525 - app - DEBUG - Database connection successful
+2024-10-17 14:40:26,078 - app - INFO - User Marco joined room general
+2024-10-17 14:40:41,814 - app - INFO - Chat message in room general from Marco: hi
+2024-10-17 14:43:38,492 - app - DEBUG - Database connection successful
