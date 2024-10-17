@@ -113,3 +113,23 @@ Database error in login process: Can't reconnect until invalid transaction is ro
 2024-10-17 14:40:26,078 - app - INFO - User Marco joined room general
 2024-10-17 14:40:41,814 - app - INFO - Chat message in room general from Marco: hi
 2024-10-17 14:43:38,492 - app - DEBUG - Database connection successful
+2024-10-17 14:43:52,078 - app - DEBUG - Database connection successful
+2024-10-17 14:45:02,200 - app - DEBUG - Database connection successful
+2024-10-17 14:45:02,200 - app - DEBUG - Attempting to log in user with email: t1oikeio@oikeio.com
+2024-10-17 14:45:02,258 - app - INFO - Creating new member for email: t1oikeio@oikeio.com
+2024-10-17 14:45:02,259 - app - DEBUG - Committing changes to database for email: t1oikeio@oikeio.com
+2024-10-17 14:45:02,373 - app - DEBUG - Sending magic link email to: t1oikeio@oikeio.com
+2024-10-17 14:45:02,639 - app - INFO - Magic link email sent to t1oikeio@oikeio.com
+2024-10-17 14:45:10,707 - app - DEBUG - Database connection successful
+2024-10-17 14:45:10,764 - app - DEBUG - Current time: 2024-10-17 14:45:10.764476+00:00, Token expiry: 2024-10-18 14:45:02.259235
+2024-10-17 14:45:10,877 - app - INFO - User t1oikeio@oikeio.com verified successfully
+2024-10-17 14:45:11,309 - app - DEBUG - Database connection successful
+2024-10-17 14:45:17,021 - app - DEBUG - Database connection successful
+2024-10-17 14:45:17,248 - app - INFO - Handle set for user t1oikeio@oikeio.com: Amber
+2024-10-17 14:45:17,512 - app - DEBUG - Database connection successful
+2024-10-17 14:45:17,915 - app - DEBUG - Database connection successful
+2024-10-17 14:45:18,613 - app - INFO - User Amber joined room general
+2024-10-17 14:45:21,699 - app - INFO - Chat message in room general from Amber: hi there
+2024-10-17 14:45:36,423 - app - DEBUG - Database connection successful
+2024-10-17 14:45:36,830 - app - DEBUG - Database connection successful
+2024-10-17 14:45:37,377 - app - INFO - User Amber joined room general
