@@ -115,6 +115,8 @@ def verify_magic_link(token):
             current_time = datetime.now(timezone.utc)
             if member.token_expiry and current_time <= member.token_expiry:
                 member.verified = True
+                member.token = None
+                member.token_expiry = None
                 db.session.commit()
                 session['email'] = email
                 app.logger.info(f"User {email} verified successfully")
