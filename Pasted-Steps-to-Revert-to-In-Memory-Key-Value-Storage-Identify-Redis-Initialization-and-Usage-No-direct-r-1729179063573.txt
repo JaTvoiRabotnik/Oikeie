@@ -1,0 +1,61 @@
+Steps to Revert to In-Memory Key-Value Storage
+Identify Redis Initialization and Usage:
+
+No direct references to Redis were found in the codebase.
+Implement In-Memory Rate Limiting:
+
+Use Python's collections.defaultdict or a similar structure to store rate limiting data in memory.
+Example Implementation:
+Step 1: Add In-Memory Rate Limiting Logic
+Add the following in-memory rate limiting logic to your application (e.g., in app.py):
+
+from collections import defaultdict
+from datetime import datetime, timedelta
+
+# Dictionary to store rate limit data
+rate_limits = defaultdict(lambda: {'count': 0, 'reset_time': datetime.now() + timedelta(minutes=1)})
+
+def rate_limited(ip):
+    now = datetime.now()
+    if now > rate_limits[ip]['reset_time']:
+        rate_limits[ip]['count'] = 0
+        rate_limits[ip]['reset_time'] = now + timedelta(minutes=1)
+    
+    rate_limits[ip]['count'] += 1
+    return rate_limits[ip]['count'] > 100  # Example limit: 100 requests per minute
+Step 2: Apply Rate Limiting to Routes
+Modify your routes to enforce the rate limiting:
+
+@app.route('/login', methods=['POST'])
+def login():
+    ip = request.remote_addr
+    if rate_limited(ip):
+        return jsonify({'success': False, 'message': 'Rate limit exceeded. Try again later.'}), 429
+    
+    email = request.form.get('email')
+    try:
+        app.logger.debug(f"Attempting to log in user with email: {email}")
+        member = Member.query.filter_by(email=email).first()
+        if not member:
+            app.logger.info(f"Creating new member for email: {email}")
+            member = Member(email=email)
+            db.session.add(member)
+        
+        token = generate_magic_link_token(email)
+        member.token = token
+        member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=24)
+        db.session.commit()
+        
+        send_magic_link_email(email, token)
+        return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
+    except SQLAlchemyError as e:
+        app.logger.error(f"Database error in login process: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'A database error occurred. Please try again later.'})
+    except Exception as e:
+        app.logger.error(f"Error in login process: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'An error occurred while processing your request. Please try again later.'})
+Update Configuration Files:
+Ensure any Redis-specific configurations are removed or commented out.
+By implementing the above changes, you can revert to using in-memory key-value storage for rate limiting, making the app work again.

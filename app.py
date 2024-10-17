@@ -14,11 +14,9 @@ from werkzeug.exceptions import NotFound, InternalServerError, Unauthorized
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_talisman import Talisman
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 import secrets
-import redis
+from collections import defaultdict
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
@@ -42,17 +40,6 @@ csrf = CSRFProtect(app)
 
 db = SQLAlchemy(app)
 
-# Configure Redis
-redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-redis_client = redis.from_url(redis_url)
-
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri=redis_url
-)
-
 logging.basicConfig(level=logging.DEBUG)
 file_handler = logging.FileHandler('app.log')
 file_handler.setLevel(logging.DEBUG)
@@ -63,6 +50,16 @@ app.logger.addHandler(file_handler)
 migrate = Migrate(app, db)
 socketio = SocketIO(app)
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
+# In-memory rate limiting
+rate_limits = defaultdict(lambda: {'count': 0, 'reset_time': datetime.now()})
+
+def is_rate_limited(key, limit, period):
+    now = datetime.now()
+    if now > rate_limits[key]['reset_time']:
+        rate_limits[key] = {'count': 0, 'reset_time': now + timedelta(seconds=period)}
+    rate_limits[key]['count'] += 1
+    return rate_limits[key]['count'] > limit
 
 with app.app_context():
     class Member(db.Model):
@@ -89,31 +86,58 @@ with app.app_context():
 
 # Apply rate limiting to specific routes
 @app.route('/')
-@limiter.limit("10 per minute")
 def index():
+    if is_rate_limited(request.remote_addr, 10, 60):
+        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
     return render_template('index.html')
 
 @app.route('/login', methods=['POST'])
-@limiter.limit("5 per minute")
 def login():
-    # Existing login logic here
-    pass
+    if is_rate_limited(request.remote_addr, 5, 60):
+        return jsonify({'success': False, 'message': 'Rate limit exceeded. Please try again later.'}), 429
+    
+    email = request.form.get('email')
+    try:
+        app.logger.debug(f"Attempting to log in user with email: {email}")
+        member = Member.query.filter_by(email=email).first()
+        if not member:
+            app.logger.info(f"Creating new member for email: {email}")
+            member = Member(email=email)
+            db.session.add(member)
+        
+        token = serializer.dumps(email, salt='email-confirm')
+        member.token = token
+        member.token_expiry = datetime.now(timezone.utc) + timedelta(hours=24)
+        db.session.commit()
+        
+        # Send magic link email logic here
+        return jsonify({'success': True, 'message': 'A magic link has been sent to your email. Please check your inbox.'})
+    except Exception as e:
+        app.logger.error(f"Error in login process: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'An error occurred while processing your request. Please try again later.'})
 
 @app.route('/verify_magic_link')
-@limiter.limit("3 per minute")
 def verify_magic_link():
+    if is_rate_limited(request.remote_addr, 3, 60):
+        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
+    
     # Existing verify_magic_link logic here
     pass
 
 @app.route('/set_handle', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
 def set_handle():
+    if is_rate_limited(request.remote_addr, 5, 60):
+        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
+    
     # Existing set_handle logic here
     pass
 
 @app.route('/chat')
-@limiter.limit("30 per minute")
 def chat():
+    if is_rate_limited(request.remote_addr, 30, 60):
+        return render_template('error.html', message="Rate limit exceeded. Please try again later."), 429
+    
     # Existing chat logic here
     pass
 
